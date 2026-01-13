@@ -1,0 +1,3 @@
+[submodule "tex-cfg"]
+	path = tex-cfg
+	url = git@github.com:Joe-Downs/tex-cfg.git
