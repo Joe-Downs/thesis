@@ -1,3 +1,6 @@
 [submodule "tex-cfg"]
 	path = tex-cfg
 	url = git@github.com:Joe-Downs/tex-cfg.git
+[submodule "modules/openzl"]
+	path = modules/openzl
+	url = git@github.com:facebook/openzl.git
