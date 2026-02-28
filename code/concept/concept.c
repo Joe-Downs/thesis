@@ -11,6 +11,8 @@
 
 #define FORMAT_VERSION (16)
 #define BUF_LENGTH 512
+#define C_NODE 1
+#define U_NODE 2
 
 static size_t compress_buf(void *dst, size_t dstCapacity, const void *src,
                            size_t srcSize) {
@@ -63,31 +65,43 @@ int main(int argc, char **argv) {
     printf("[rank 0] Compression:   %.6f s\n", t1 - t0);
 
     // Send the size first so the receiver knows how many bytes to expect
-    double t2 = MPI_Wtime();
-    MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, 1, 0, MPI_COMM_WORLD);
-    MPI_Send(tmp_compressed, (int)compressed_size, MPI_BYTE, 1, 1, MPI_COMM_WORLD);
-    double t3 = MPI_Wtime();
+    double start = MPI_Wtime();
+    MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, C_NODE, 0, MPI_COMM_WORLD);
+    MPI_Send(tmp_compressed, (int)compressed_size, MPI_BYTE, C_NODE, 1, MPI_COMM_WORLD);
+    printf("[rank 0] Send (C):      %.6f s\n", MPI_Wtime() - start);
 
-    printf("[rank 0] Send:          %.6f s\n", t3 - t2);
+    start = MPI_Wtime();
+    MPI_Send(&srcSize, 1, MPI_UNSIGNED_LONG, U_NODE, 0, MPI_COMM_WORLD);
+    MPI_Send(src, (int)srcSize, MPI_BYTE, U_NODE, 1, MPI_COMM_WORLD);
+    printf("[rank 0] Send (U):      %.6f s\n", MPI_Wtime() - start);
   }
 
-  if (rank == 1) {
+  if (rank == C_NODE) {
+    // Receiving and decompressing
     size_t compressed_size;
     MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
 
     char compressed[ZL_COMPRESSBOUND(BUF_LENGTH)];
-    double t0 = MPI_Wtime();
+    double start = MPI_Wtime();
     MPI_Recv(compressed, (int)compressed_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
-    double t1 = MPI_Wtime();
+    printf("[rank 1] Receive:       %.6f s\n", MPI_Wtime() - start);
 
-    char decompressed[BUF_LENGTH];
-    double t2 = MPI_Wtime();
+    start = MPI_Wtime();
     decompress_buf(decompressed, BUF_LENGTH, compressed, compressed_size);
-    double t3 = MPI_Wtime();
+    printf("[rank 1] Decompression: %.6f s\n",  MPI_Wtime() - start);
+    //printf("Decompressed: %s\n", decompressed);
+  }
 
-    printf("[rank 1] Receive:       %.6f s\n", t1 - t0);
-    printf("[rank 1] Decompression: %.6f s\n", t3 - t2);
-    printf("Decompressed: %s\n", decompressed);
+  if (rank == U_NODE) {
+    // Receiving uncompressed
+    size_t recv_size;
+    MPI_Recv(&recv_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
+    char data[recv_size];
+    double recv_start = MPI_Wtime();
+    MPI_Recv(data, (int)recv_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
+    printf("[rank 2] Receive:       %.6f s\n", MPI_Wtime() - recv_start);
+    printf("[rank 2] Decompress:    %.6f s\n", 0.0);
+    //printf("Received: %s\n", data);
   }
   MPI_Finalize();
   return 0;
