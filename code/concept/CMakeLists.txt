@@ -7,5 +7,6 @@ target_compile_features(concept PRIVATE c_std_11)
 target_link_libraries(concept
     PRIVATE
         openzl
+        shared_components
         MPI::MPI_C
 )

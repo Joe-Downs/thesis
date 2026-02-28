@@ -1,15 +1,20 @@
 #include <mpi.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
+#include "custom_parsers/shared_components/clustering.h" // ZS2_createGraph_genericClustering
+#include "openzl/codecs/zl_sddl.h"   // ZL_Compressor_buildSDDLGraph
 #include "openzl/common/assertion.h" // ZL_REQUIRE, ZL_REQUIRE_NN
 #include "openzl/zl_compress.h"      // ZL_compressBound, ZL_COMPRESSBOUND
 #include "openzl/zl_compressor.h"    // ZL_Compressor_*, ZL_CCtx_*
 #include "openzl/zl_decompress.h"
 #include "openzl/zl_errors.h" // ZL_isError, ZL_validResult
 #include "openzl/zl_public_nodes.h"
+#include "openzl/zl_version.h" // ZL_MAX_FORMAT_VERSION
 
-#define FORMAT_VERSION (16)
+#include "hdf5_sddl_bytecode.h"
+
 #define BUF_LENGTH 512
 #define C_NODE 1
 #define U_NODE 2
@@ -21,14 +26,19 @@ static size_t compress_buf(void *dst, size_t dstCapacity, const void *src,
   ZL_Compressor *cgraph = ZL_Compressor_create();
   ZL_REQUIRE_NN(cgraph);
 
-  ZL_REQUIRE(!ZL_isError(ZL_Compressor_setParameter(
-      cgraph, ZL_CParam_formatVersion, FORMAT_VERSION)));
-  ZL_REQUIRE(
-      !ZL_isError(ZL_Compressor_selectStartingGraphID(cgraph, ZL_GRAPH_ZSTD)));
+  ZL_REQUIRE(!ZL_isError(ZL_Compressor_setParameter(cgraph, ZL_CParam_formatVersion, ZL_MAX_FORMAT_VERSION)));
+
+  ZL_GraphID clustering = ZS2_createGraph_genericClustering(cgraph);
+  ZL_Result_ZL_GraphID sddl_result = ZL_Compressor_buildSDDLGraph(cgraph, hdf5_sddl_bytecode, hdf5_sddl_bytecode_size, clustering);
+  ZL_REQUIRE(sddl_result._value._code == ZL_ErrorCode_no_error);
+  ZL_REQUIRE(!ZL_isError(ZL_Compressor_selectStartingGraphID(cgraph, sddl_result._value._value)));
   ZL_REQUIRE(!ZL_isError(ZL_CCtx_refCompressor(cctx, cgraph)));
 
   ZL_Report report = ZL_CCtx_compress(cctx, dst, dstCapacity, src, srcSize);
-  ZL_REQUIRE(!ZL_isError(report));
+  if (ZL_isError(report)) {
+    fprintf(stderr, "ZL_CCtx_compress error: %s\n", ZL_ErrorCode_toString(ZL_errorCode(report)));
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   size_t compressedSize = ZL_validResult(report);
 
   ZL_Compressor_free(cgraph);
@@ -51,13 +61,22 @@ int main(int argc, char **argv) {
   MPI_Status status;
 
   char decompressed[BUF_LENGTH];
-  char tmp_compressed[ZL_COMPRESSBOUND(BUF_LENGTH)];
   if (rank == 0) {
-    char src[BUF_LENGTH] = "Vivamus id enim. Nulla posuere. Pellentesque tristique imperdiet tortor. Sed diam. Phasellus neque orci, porta a, aliquet quis, semper a, massa. Nullam tempus. Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit. Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi. Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi. Aliquam posuere.";
-    size_t srcSize = strlen(src);
+    FILE *fileptr = fopen("data-1996-04-16-03-1.h5", "rb");
+    if (!fileptr) { perror("fopen"); MPI_Abort(MPI_COMM_WORLD, 1); }
+    fseek(fileptr, 0, SEEK_END);
+    size_t srcSize = (size_t)ftell(fileptr);
+    rewind(fileptr);
+
+    char *src = (char *)malloc(srcSize);
+    fread(src, 1, srcSize, fileptr);
+    fclose(fileptr);
+
+    size_t compressBound = ZL_compressBound(srcSize);
+    char *tmp_compressed = (char *)malloc(compressBound);
 
     double t0 = MPI_Wtime();
-    size_t compressed_size = compress_buf(tmp_compressed, sizeof(tmp_compressed), src, srcSize);
+    size_t compressed_size = compress_buf(tmp_compressed, compressBound, src, srcSize);
     double t1 = MPI_Wtime();
 
     printf("Uncompressed: %ld\n", srcSize);
@@ -74,6 +93,9 @@ int main(int argc, char **argv) {
     MPI_Send(&srcSize, 1, MPI_UNSIGNED_LONG, U_NODE, 0, MPI_COMM_WORLD);
     MPI_Send(src, (int)srcSize, MPI_BYTE, U_NODE, 1, MPI_COMM_WORLD);
     printf("[rank 0] Send (U):      %.6f s\n", MPI_Wtime() - start);
+
+    free(src);
+    free(tmp_compressed);
   }
 
   if (rank == C_NODE) {
@@ -81,27 +103,33 @@ int main(int argc, char **argv) {
     size_t compressed_size;
     MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
 
-    char compressed[ZL_COMPRESSBOUND(BUF_LENGTH)];
+    char *compressed = (char *)malloc(compressed_size);
     double start = MPI_Wtime();
     MPI_Recv(compressed, (int)compressed_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
     printf("[rank 1] Receive:       %.6f s\n", MPI_Wtime() - start);
 
+    ZL_Report dr = ZL_getDecompressedSize(compressed, compressed_size);
+    size_t decompressed_size = ZL_validResult(dr);
+    char *decompressed_buf = (char *)malloc(decompressed_size);
+
     start = MPI_Wtime();
-    decompress_buf(decompressed, BUF_LENGTH, compressed, compressed_size);
-    printf("[rank 1] Decompression: %.6f s\n",  MPI_Wtime() - start);
-    //printf("Decompressed: %s\n", decompressed);
+    decompress_buf(decompressed_buf, decompressed_size, compressed, compressed_size);
+    printf("[rank 1] Decompression: %.6f s\n", MPI_Wtime() - start);
+
+    free(compressed);
+    free(decompressed_buf);
   }
 
   if (rank == U_NODE) {
     // Receiving uncompressed
     size_t recv_size;
     MPI_Recv(&recv_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
-    char data[recv_size];
+    char *data = (char *)malloc(recv_size);
     double recv_start = MPI_Wtime();
     MPI_Recv(data, (int)recv_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
     printf("[rank 2] Receive:       %.6f s\n", MPI_Wtime() - recv_start);
     printf("[rank 2] Decompress:    %.6f s\n", 0.0);
-    //printf("Received: %s\n", data);
+    free(data);
   }
   MPI_Finalize();
   return 0;

@@ -1,0 +1,77 @@
+# HDF5 file format - Superblock v0
+# sizeof_offsets = 8, sizeof_lengths = 8
+
+# Root Group Symbol Table Entry (40 bytes):
+#   link_name_offset (8), obj_header_address (8),
+#   cache_type (4), reserved (4),
+#   scratch_btree_address (8), scratch_heap_address (8)
+HDF5_SymbolTableEntry = {
+  UInt64LE
+  UInt64LE
+  UInt32LE
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt64LE
+  UInt64LE
+}
+
+# Superblock v0 (96 bytes total):
+#   signature (8): \x89HDF\r\n\x1a\n
+#   superblock_version, freespace_version, root_st_entry_version, reserved (4)
+#   shared_header_msg_version, sizeof_offsets (=8), sizeof_lengths (=8), reserved (4)
+#   group_leaf_node_k (2), group_internal_node_k (2), file_consistency_flags (4)
+#   base_address (8), freespace_address (8), eof_address (8), driver_info_address (8)
+#   root_group_entry: HDF5_SymbolTableEntry (40)
+HDF5_Superblock_v0 = {
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt8
+  UInt16LE
+  UInt16LE
+  UInt32LE
+  UInt64LE
+  UInt64LE
+  UInt64LE
+  UInt64LE
+  HDF5_SymbolTableEntry
+}
+
+# Float32LE represented as UInt32LE (same 4 bytes, little-endian)
+F32 = {
+  UInt32LE
+}
+
+: HDF5_Superblock_v0
+
+# /climate datasets (row-major Float32LE)
+# data: 768 x 1152 x 16 = 14155776 elements
+: F32[14155776]
+# data_stats: 4 x 16 = 64 elements
+: F32[64]
+# labels_0: 768 x 1152 = 884736 elements
+: F32[884736]
+# labels_0_stats: 7 x 1 = 7 elements
+: F32[7]
+# labels_1: 768 x 1152 = 884736 elements
+: F32[884736]
+# labels_1_stats: 7 x 1 = 7 elements
+: F32[7]
+
+# Remaining HDF5 metadata
+trailing = _rem
+: Byte[trailing]
