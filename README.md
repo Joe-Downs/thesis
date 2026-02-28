@@ -32,3 +32,11 @@ config](https://github.com/Joe-Downs/tex-cfg), be sure to clone the project with
 `git clone --recursive git@github.com:Joe-Downs/thesis.git`. If you forget this
 step, then run `git submodule init` and `git submodule update` in the cloned
 repo.
+
+
+## Acknowledgements
+This research was supported in part by the U.S. National Science Foundation
+(NSF) under grants OAC2430270 and OAC2322248, and the University of Louisville’s
+Research Computing team. I would also like to acknowledge the use of the Zurada
+system at the University of Louisville for the computational and statistical
+analyses work related to this study.
