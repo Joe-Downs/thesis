@@ -55,23 +55,28 @@ int main(int argc, char **argv) {
     size_t srcSize = strlen(src);
     size_t compressed_size = compress_buf(tmp_compressed, sizeof(tmp_compressed), src, srcSize);
 
-    char *compressed = malloc(compressed_size);
-    compressed = tmp_compressed;
-
     printf("Uncompressed: %ld\n", srcSize);
     printf("Compressed:   %ld\n", compressed_size);
 
+    //decompress_buf(decompressed, BUF_LENGTH, tmp_compressed, compressed_size);
+    //printf("Decompressed: %s\n", decompressed);
+
+    // Send the size first so the receiver knows how many bytes to expect
+    MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, 1, 0, MPI_COMM_WORLD);
+    MPI_Send(tmp_compressed, (int)compressed_size, MPI_BYTE, 1, 1, MPI_COMM_WORLD);
+  }
+
+  if (rank == 1) {
+    size_t compressed_size;
+    MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
+
+    char compressed[ZL_COMPRESSBOUND(BUF_LENGTH)];
+    MPI_Recv(compressed, (int)compressed_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
+
+    char decompressed[BUF_LENGTH];
     decompress_buf(decompressed, BUF_LENGTH, compressed, compressed_size);
     printf("Decompressed: %s\n", decompressed);
-    //MPI_Send(compressed, compressed_size, MPI_CHAR, 1, 1, MPI_COMM_WORLD);
   }
-  /* if (rank == 1) { */
-  /*   char compressed[BUF_LENGTH]; */
-  /*   char decompressed[BUF_LENGTH]; */
-  /*   MPI_Recv(compressed, BUF_LENGTH, MPI_CHAR, 1, 1, MPI_COMM_WORLD, &status); */
-  /*   decompress_buf(decompressed, BUF_LENGTH, ); */
-  /*   printf("Uncompressed: %s\n", dst); */
-  /* } */
   MPI_Finalize();
   return 0;
 }
