@@ -84,14 +84,14 @@ int main(int argc, char **argv) {
     printf("[rank 0] Compression:   %.6f s\n", t1 - t0);
 
     // Send the size first so the receiver knows how many bytes to expect
-    double start = MPI_Wtime();
     MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, C_NODE, 0, MPI_COMM_WORLD);
-    MPI_Send(tmp_compressed, (int)compressed_size, MPI_BYTE, C_NODE, 1, MPI_COMM_WORLD);
+    double start = MPI_Wtime();
+    MPI_Ssend(tmp_compressed, (int)compressed_size, MPI_BYTE, C_NODE, 1, MPI_COMM_WORLD);
     printf("[rank 0] Send (C):      %.6f s\n", MPI_Wtime() - start);
 
-    start = MPI_Wtime();
     MPI_Send(&srcSize, 1, MPI_UNSIGNED_LONG, U_NODE, 0, MPI_COMM_WORLD);
-    MPI_Send(src, (int)srcSize, MPI_BYTE, U_NODE, 1, MPI_COMM_WORLD);
+    start = MPI_Wtime();
+    MPI_Ssend(src, (int)srcSize, MPI_BYTE, U_NODE, 1, MPI_COMM_WORLD);
     printf("[rank 0] Send (U):      %.6f s\n", MPI_Wtime() - start);
 
     free(src);
