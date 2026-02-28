@@ -53,17 +53,22 @@ int main(int argc, char **argv) {
   if (rank == 0) {
     char src[BUF_LENGTH] = "Vivamus id enim. Nulla posuere. Pellentesque tristique imperdiet tortor. Sed diam. Phasellus neque orci, porta a, aliquet quis, semper a, massa. Nullam tempus. Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit. Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi. Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi. Aliquam posuere.";
     size_t srcSize = strlen(src);
+
+    double t0 = MPI_Wtime();
     size_t compressed_size = compress_buf(tmp_compressed, sizeof(tmp_compressed), src, srcSize);
+    double t1 = MPI_Wtime();
 
     printf("Uncompressed: %ld\n", srcSize);
     printf("Compressed:   %ld\n", compressed_size);
-
-    //decompress_buf(decompressed, BUF_LENGTH, tmp_compressed, compressed_size);
-    //printf("Decompressed: %s\n", decompressed);
+    printf("[rank 0] Compression:   %.6f s\n", t1 - t0);
 
     // Send the size first so the receiver knows how many bytes to expect
+    double t2 = MPI_Wtime();
     MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, 1, 0, MPI_COMM_WORLD);
     MPI_Send(tmp_compressed, (int)compressed_size, MPI_BYTE, 1, 1, MPI_COMM_WORLD);
+    double t3 = MPI_Wtime();
+
+    printf("[rank 0] Send:          %.6f s\n", t3 - t2);
   }
 
   if (rank == 1) {
@@ -71,10 +76,17 @@ int main(int argc, char **argv) {
     MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
 
     char compressed[ZL_COMPRESSBOUND(BUF_LENGTH)];
+    double t0 = MPI_Wtime();
     MPI_Recv(compressed, (int)compressed_size, MPI_BYTE, 0, 1, MPI_COMM_WORLD, &status);
+    double t1 = MPI_Wtime();
 
     char decompressed[BUF_LENGTH];
+    double t2 = MPI_Wtime();
     decompress_buf(decompressed, BUF_LENGTH, compressed, compressed_size);
+    double t3 = MPI_Wtime();
+
+    printf("[rank 1] Receive:       %.6f s\n", t1 - t0);
+    printf("[rank 1] Decompression: %.6f s\n", t3 - t2);
     printf("Decompressed: %s\n", decompressed);
   }
   MPI_Finalize();
