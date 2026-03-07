@@ -8,8 +8,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timezone
-
-from file_downloader import GlobusDownloader
+from pathlib import Path
 
 # Patterns matching concept's stdout lines
 PATTERNS = {
@@ -52,9 +51,13 @@ def run_file(binary: str, np: int, input_file: str, launcher: str = "mpirun") ->
 
 def main():
     parser = argparse.ArgumentParser(description="Batch runner for concept binary")
-    parser.add_argument("filelist", nargs="?",
-                        help="Text file with one local (or remote) filename per line "
-                             "(required unless --sample is used)")
+
+    src = parser.add_mutually_exclusive_group(required=True)
+    src.add_argument("filelist", nargs="?",
+                     help="Text file with one local file path per line")
+    src.add_argument("--data-dir",
+                     help="Directory containing HDF5 files to test (all files used)")
+
     parser.add_argument("--binary", default=os.path.join(os.path.dirname(__file__),
                         "../../build/code/concept/concept"),
                         help="Path to concept binary (default: ../../build/code/concept/concept)")
@@ -64,53 +67,19 @@ def main():
                         help="MPI launcher to use (default: mpirun; use srun inside Slurm jobs)")
     parser.add_argument("--runs", type=int, default=1,
                         help="Number of repeated runs per file (default: 1)")
-    parser.add_argument("--seed", type=int, default=None,
-                        help="Optional seed to use for repeatability (default: None)")
     parser.add_argument("--output", default="results.json",
                         help="Output JSON file (default: results.json)")
 
-    # Globus options
-    globus = parser.add_argument_group("Globus options")
-    globus.add_argument("--client-id", default=os.environ.get("GLOBUS_CLIENT_ID"),
-                        help="Globus native app client UUID (or $GLOBUS_CLIENT_ID)")
-    globus.add_argument("--source-endpoint",
-                        help="Source Globus endpoint UUID")
-    globus.add_argument("--local-endpoint",
-                        help="Local Globus Connect Personal endpoint UUID")
-    globus.add_argument("--remote-path",
-                        help="Directory on the source endpoint to list/download from")
-    globus.add_argument("--local-dir", default="downloads",
-                        help="Local directory to download files into (default: downloads)")
-    globus.add_argument("--sample", type=int, metavar="N",
-                        help="Randomly sample N files from --remote-path instead of using a filelist")
-
     args = parser.parse_args()
 
-    use_globus = any([args.source_endpoint, args.local_endpoint, args.sample])
-
-    if use_globus:
-        for flag in ("client_id", "source_endpoint", "local_endpoint", "remote_path"):
-            if not getattr(args, flag):
-                parser.error(f"--{flag.replace('_', '-')} is required when using Globus options")
-        downloader = GlobusDownloader(
-            client_id=args.client_id,
-            source_endpoint=args.source_endpoint,
-            local_endpoint=args.local_endpoint,
-            local_dir=args.local_dir,
-        )
-        if args.sample:
-            print(f"Sampling {args.sample} random file(s) from {args.remote_path} …")
-            filenames = downloader.sample_files(args.remote_path, args.sample, seed=args.seed)
-        else:
-            if not args.filelist:
-                parser.error("filelist is required when not using --sample")
-            with open(args.filelist) as f:
-                filenames = [line.strip() for line in f if line.strip()]
-        print(f"Downloading {len(filenames)} file(s) via Globus …")
-        files = downloader.download(filenames, args.remote_path)
+    if args.data_dir:
+        data_dir = Path(args.data_dir)
+        if not data_dir.is_dir():
+            parser.error(f"--data-dir '{data_dir}' is not a directory")
+        files = sorted(str(p) for p in data_dir.iterdir() if p.is_file())
+        if not files:
+            parser.error(f"--data-dir '{data_dir}' contains no files")
     else:
-        if not args.filelist:
-            parser.error("filelist is required when not using Globus options")
         with open(args.filelist) as f:
             files = [line.strip() for line in f if line.strip()]
 

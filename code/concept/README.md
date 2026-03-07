@@ -1,8 +1,14 @@
 # Batch Compression Benchmarking
 
 Runs the `concept` MPI binary against one or more HDF5 files and records timing
-results as JSON. Optionally downloads files from a Globus endpoint before
-running.
+results as JSON.
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `data_downloader.py` | Download files from a Globus endpoint (run on login node, needs internet) |
+| `batch_runner.py` | Run `concept` over a set of local files and save JSON results |
 
 ## Quick start
 
@@ -13,16 +19,28 @@ cmake -B build && cmake --build build
 # Run against a local filelist
 python3 batch_runner.py files.txt --binary ./concept --runs 3
 
-# Run with Globus download (see below for where to find the IDs)
-python3 batch_runner.py \
-  --client-id       <your-client-uuid> \
-  --source-endpoint <source-endpoint-uuid> \
-  --local-endpoint  <your-gcp-endpoint-uuid> \
-  --remote-path     /path/on/source/ \
-  --sample 15 --seed 42
+# Or point at a directory of files
+python3 batch_runner.py --data-dir ./downloads --binary ./concept --runs 3
 ```
 
 Results are written to `results.json` by default (`--output` to override).
+
+### Downloading files from Globus first
+
+```bash
+# Download 15 random files to ./downloads (run this on a machine with internet)
+python3 data_downloader.py \
+  --client-id       $GLOBUS_CLIENT_ID \
+  --source-endpoint <source-endpoint-uuid> \
+  --local-endpoint  <your-gcp-endpoint-uuid> \
+  --remote-path     /path/on/source/ \
+  --sample 15 --seed 42 \
+  --local-dir ./downloads
+
+# Then run the benchmark
+python3 batch_runner.py --data-dir ./downloads
+```
+
 
 ---
 
