@@ -35,8 +35,11 @@ def parse_output(stdout: str) -> dict:
     return result
 
 
-def run_file(binary: str, np: int, input_file: str) -> dict:
-    cmd = ["mpirun", "-n", str(np), binary, input_file]
+def run_file(binary: str, np: int, input_file: str, launcher: str = "mpirun") -> dict:
+    if launcher == "srun":
+        cmd = ["srun", "-n", str(np), binary, input_file]
+    else:
+        cmd = ["mpirun", "-n", str(np), binary, input_file]
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
         print(f"  ERROR (exit {proc.returncode}):\n{proc.stderr.strip()}", file=sys.stderr)
@@ -57,6 +60,8 @@ def main():
                         help="Path to concept binary (default: ../../build/code/concept/concept)")
     parser.add_argument("--np", type=int, default=3,
                         help="Number of MPI ranks (default: 3)")
+    parser.add_argument("--launcher", choices=["mpirun", "srun"], default="mpirun",
+                        help="MPI launcher to use (default: mpirun; use srun inside Slurm jobs)")
     parser.add_argument("--runs", type=int, default=1,
                         help="Number of repeated runs per file (default: 1)")
     parser.add_argument("--seed", type=int, default=None,
@@ -116,7 +121,7 @@ def main():
         for run_idx in range(args.runs):
             label = f"{path}" + (f" (run {run_idx + 1}/{args.runs})" if args.runs > 1 else "")
             print(f"  {label} ... ", end="", flush=True)
-            metrics = run_file(args.binary, args.np, path)
+            metrics = run_file(args.binary, args.np, path, args.launcher)
             metrics["run"] = run_idx
             results.append(metrics)
             if "error" not in metrics:
