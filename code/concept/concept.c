@@ -123,7 +123,11 @@ int main(int argc, char **argv) {
 
   char decompressed[BUF_LENGTH];
   if (rank == 0) {
-    FILE *fileptr = fopen("data-1996-04-16-03-1.h5", "rb");
+    if (argc < 2) {
+      fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    FILE *fileptr = fopen(argv[1], "rb");
     if (!fileptr) { perror("fopen"); MPI_Abort(MPI_COMM_WORLD, 1); }
     fseek(fileptr, 0, SEEK_END);
     size_t srcSize = (size_t)ftell(fileptr);
@@ -140,6 +144,7 @@ int main(int argc, char **argv) {
     size_t compressed_size = compress_buf(tmp_compressed, compressBound, src, srcSize);
     double t1 = MPI_Wtime();
 
+    printf("File:         %s\n", argv[1]);
     printf("Uncompressed: %ld\n", srcSize);
     printf("Compressed:   %ld\n", compressed_size);
     printf("[rank 0] Compression:   %.6f s\n", t1 - t0);
