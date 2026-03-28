@@ -86,7 +86,7 @@ def parse_output(stdout: str, input_file: str) -> list[dict]:
         result.update(runs[run_num])
         results.append(result)
 
-    return results if results else [{"file": input_file, "run": 0, "error": "parse failed"}]
+    return results if results else [{"file": input_file, "run": 0, "error": "parse failed", "results": results}]
 
 
 def run_file(binary: str, np: int, input_file: str, num_runs: int, launcher: str = "mpirun",
