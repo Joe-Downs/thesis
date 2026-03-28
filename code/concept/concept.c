@@ -121,10 +121,17 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Status status;
 
+  // Parse --runs argument (default: 1)
+  int num_runs = 1;
+  if (argc >= 4 && strcmp(argv[2], "--runs") == 0) {
+    num_runs = atoi(argv[3]);
+    if (num_runs < 1) num_runs = 1;
+  }
+
   char decompressed[BUF_LENGTH];
   if (rank == 0) {
     if (argc < 2) {
-      fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
+      fprintf(stderr, "Usage: %s <input_file> [--runs N]\n", argv[0]);
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
     FILE *fileptr = fopen(argv[1], "rb");
@@ -137,119 +144,132 @@ int main(int argc, char **argv) {
     fread(src, 1, srcSize, fileptr);
     fclose(fileptr);
 
+    // Print file info once
+    printf("File:         %s\n", argv[1]);
+    printf("Uncompressed: %ld\n", srcSize);
+
     size_t compressBound = ZL_compressBound(srcSize);
     char *tmp_compressed = (char *)malloc(compressBound);
 
-    double t0 = MPI_Wtime();
-    size_t compressed_size = compress_buf(tmp_compressed, compressBound, src, srcSize);
-    double t1 = MPI_Wtime();
+    // Loop over runs
+    for (int run = 0; run < num_runs; run++) {
+      double t0 = MPI_Wtime();
+      size_t compressed_size = compress_buf(tmp_compressed, compressBound, src, srcSize);
+      double t1 = MPI_Wtime();
 
-    printf("File:         %s\n", argv[1]);
-    printf("Uncompressed: %ld\n", srcSize);
-    printf("Compressed:   %ld\n", compressed_size);
-    printf("[rank 0] Compression:   %.6f s\n", t1 - t0);
+      if (run == 0) {
+        printf("Compressed:   %ld\n", compressed_size);
+      }
+      printf("[run %d] Compression:   %.6f s\n", run, t1 - t0);
 
-    // Send sizes so receivers can bind their TCP sockets
-    MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, C_NODE, 0, MPI_COMM_WORLD);
-    MPI_Send(&srcSize,         1, MPI_UNSIGNED_LONG, U_NODE, 0, MPI_COMM_WORLD);
+      // Send sizes so receivers can bind their TCP sockets
+      MPI_Send(&compressed_size, 1, MPI_UNSIGNED_LONG, C_NODE, 0, MPI_COMM_WORLD);
+      MPI_Send(&srcSize,         1, MPI_UNSIGNED_LONG, U_NODE, 0, MPI_COMM_WORLD);
 
-    // Receive TCP endpoint (hostname + port) from each receiver
-    char c_host[256]; int c_port;
-    char u_host[256]; int u_port;
-    MPI_Recv(c_host,  sizeof(c_host), MPI_CHAR, C_NODE, 2, MPI_COMM_WORLD, &status);
-    MPI_Recv(&c_port, 1,              MPI_INT,  C_NODE, 3, MPI_COMM_WORLD, &status);
-    MPI_Recv(u_host,  sizeof(u_host), MPI_CHAR, U_NODE, 2, MPI_COMM_WORLD, &status);
-    MPI_Recv(&u_port, 1,              MPI_INT,  U_NODE, 3, MPI_COMM_WORLD, &status);
+      // Receive TCP endpoint (hostname + port) from each receiver
+      char c_host[256]; int c_port;
+      char u_host[256]; int u_port;
+      MPI_Recv(c_host,  sizeof(c_host), MPI_CHAR, C_NODE, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(&c_port, 1,              MPI_INT,  C_NODE, 3, MPI_COMM_WORLD, &status);
+      MPI_Recv(u_host,  sizeof(u_host), MPI_CHAR, U_NODE, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(&u_port, 1,              MPI_INT,  U_NODE, 3, MPI_COMM_WORLD, &status);
 
-    double start = MPI_Wtime();
-    tcp_connect_send(c_host, c_port, tmp_compressed, compressed_size);
-    printf("[rank 0] Send (C):      %.6f s\n", MPI_Wtime() - start);
+      double start = MPI_Wtime();
+      tcp_connect_send(c_host, c_port, tmp_compressed, compressed_size);
+      printf("[run %d] Send (C):      %.6f s\n", run, MPI_Wtime() - start);
 
-    start = MPI_Wtime();
-    tcp_connect_send(u_host, u_port, src, srcSize);
-    printf("[rank 0] Send (U):      %.6f s\n", MPI_Wtime() - start);
+      start = MPI_Wtime();
+      tcp_connect_send(u_host, u_port, src, srcSize);
+      printf("[run %d] Send (U):      %.6f s\n", run, MPI_Wtime() - start);
+    }
 
     free(src);
     free(tmp_compressed);
   }
 
   if (rank == C_NODE) {
-    // Receive expected size, bind TCP socket, advertise endpoint to rank 0
-    size_t compressed_size;
-    MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
+    // Loop over runs
+    for (int run = 0; run < num_runs; run++) {
+      // Receive expected size, bind TCP socket, advertise endpoint to rank 0
+      size_t compressed_size;
+      MPI_Recv(&compressed_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) { perror("socket"); MPI_Abort(MPI_COMM_WORLD, 1); }
-    int opt = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    struct sockaddr_in addr = {0};
-    addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port        = 0; // ephemeral
-    if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
-      perror("bind"); MPI_Abort(MPI_COMM_WORLD, 1);
+      int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+      if (server_fd < 0) { perror("socket"); MPI_Abort(MPI_COMM_WORLD, 1); }
+      int opt = 1;
+      setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+      struct sockaddr_in addr = {0};
+      addr.sin_family      = AF_INET;
+      addr.sin_addr.s_addr = INADDR_ANY;
+      addr.sin_port        = 0; // ephemeral
+      if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+        perror("bind"); MPI_Abort(MPI_COMM_WORLD, 1);
+      }
+      listen(server_fd, 1);
+      socklen_t addrlen = sizeof(addr);
+      getsockname(server_fd, (struct sockaddr *)&addr, &addrlen);
+      int port = ntohs(addr.sin_port);
+
+      char ipstr[256];
+      get_local_ip(ipstr, sizeof(ipstr));
+      MPI_Send(ipstr,  sizeof(ipstr), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
+      MPI_Send(&port,    1,               MPI_INT,  0, 3, MPI_COMM_WORLD);
+
+      char *compressed = (char *)malloc(compressed_size);
+      double start = MPI_Wtime();
+      tcp_accept_recv(server_fd, compressed, compressed_size);
+      printf("[rank 1] Receive:       %.6f s\n", MPI_Wtime() - start);
+      close(server_fd);
+
+      ZL_Report dr = ZL_getDecompressedSize(compressed, compressed_size);
+      size_t decompressed_size = ZL_validResult(dr);
+      char *decompressed_buf = (char *)malloc(decompressed_size);
+
+      start = MPI_Wtime();
+      decompress_buf(decompressed_buf, decompressed_size, compressed, compressed_size);
+      printf("[rank 1] Decompression: %.6f s\n", MPI_Wtime() - start);
+
+      free(compressed);
+      free(decompressed_buf);
     }
-    listen(server_fd, 1);
-    socklen_t addrlen = sizeof(addr);
-    getsockname(server_fd, (struct sockaddr *)&addr, &addrlen);
-    int port = ntohs(addr.sin_port);
-
-    char ipstr[256];
-    get_local_ip(ipstr, sizeof(ipstr));
-    MPI_Send(ipstr,  sizeof(ipstr), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(&port,    1,               MPI_INT,  0, 3, MPI_COMM_WORLD);
-
-    char *compressed = (char *)malloc(compressed_size);
-    double start = MPI_Wtime();
-    tcp_accept_recv(server_fd, compressed, compressed_size);
-    printf("[rank 1] Receive:       %.6f s\n", MPI_Wtime() - start);
-    close(server_fd);
-
-    ZL_Report dr = ZL_getDecompressedSize(compressed, compressed_size);
-    size_t decompressed_size = ZL_validResult(dr);
-    char *decompressed_buf = (char *)malloc(decompressed_size);
-
-    start = MPI_Wtime();
-    decompress_buf(decompressed_buf, decompressed_size, compressed, compressed_size);
-    printf("[rank 1] Decompression: %.6f s\n", MPI_Wtime() - start);
-
-    free(compressed);
-    free(decompressed_buf);
   }
 
   if (rank == U_NODE) {
-    // Receive expected size, bind TCP socket, advertise endpoint to rank 0
-    size_t recv_size;
-    MPI_Recv(&recv_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
+    // Loop over runs
+    for (int run = 0; run < num_runs; run++) {
+      // Receive expected size, bind TCP socket, advertise endpoint to rank 0
+      size_t recv_size;
+      MPI_Recv(&recv_size, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &status);
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) { perror("socket"); MPI_Abort(MPI_COMM_WORLD, 1); }
-    int opt = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    struct sockaddr_in addr = {0};
-    addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port        = 0;
-    if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
-      perror("bind"); MPI_Abort(MPI_COMM_WORLD, 1);
+      int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+      if (server_fd < 0) { perror("socket"); MPI_Abort(MPI_COMM_WORLD, 1); }
+      int opt = 1;
+      setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+      struct sockaddr_in addr = {0};
+      addr.sin_family      = AF_INET;
+      addr.sin_addr.s_addr = INADDR_ANY;
+      addr.sin_port        = 0;
+      if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+        perror("bind"); MPI_Abort(MPI_COMM_WORLD, 1);
+      }
+      listen(server_fd, 1);
+      socklen_t addrlen = sizeof(addr);
+      getsockname(server_fd, (struct sockaddr *)&addr, &addrlen);
+      int port = ntohs(addr.sin_port);
+
+      char ipstr[256];
+      get_local_ip(ipstr, sizeof(ipstr));
+      MPI_Send(ipstr,  sizeof(ipstr), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
+      MPI_Send(&port,    1,               MPI_INT,  0, 3, MPI_COMM_WORLD);
+
+      char *data = (char *)malloc(recv_size);
+      double recv_start = MPI_Wtime();
+      tcp_accept_recv(server_fd, data, recv_size);
+      printf("[rank 2] Receive:       %.6f s\n", MPI_Wtime() - recv_start);
+      printf("[rank 2] Decompress:    %.6f s\n", 0.0);
+      close(server_fd);
+      free(data);
     }
-    listen(server_fd, 1);
-    socklen_t addrlen = sizeof(addr);
-    getsockname(server_fd, (struct sockaddr *)&addr, &addrlen);
-    int port = ntohs(addr.sin_port);
-
-    char ipstr[256];
-    get_local_ip(ipstr, sizeof(ipstr));
-    MPI_Send(ipstr,  sizeof(ipstr), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(&port,    1,               MPI_INT,  0, 3, MPI_COMM_WORLD);
-
-    char *data = (char *)malloc(recv_size);
-    double recv_start = MPI_Wtime();
-    tcp_accept_recv(server_fd, data, recv_size);
-    printf("[rank 2] Receive:       %.6f s\n", MPI_Wtime() - recv_start);
-    printf("[rank 2] Decompress:    %.6f s\n", 0.0);
-    close(server_fd);
-    free(data);
   }
   MPI_Finalize();
   return 0;
