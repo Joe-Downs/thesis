@@ -22,11 +22,22 @@ python3 batch_runner.py files.txt --binary ./concept --runs 3
 
 # Or point at a directory of files
 python3 batch_runner.py --data-dir ./downloads --binary ./concept --runs 3
+
+# Debug failures with verbose output
+python3 batch_runner.py files.txt --verbose --log-dir ./logs
 ```
 
 Results are written to `results.json` by default (`--output` to override).
 
 **Note**: `--runs N` tells `concept` to repeat compression/transmission N times per file within a single process. This is more efficient than spawning N separate processes, especially on HPC clusters.
+
+### Debugging failures
+
+If you see "FAILED" with no clear cause:
+- Check stderr output (printed automatically on failure)
+- Use `--verbose` to see full command output and timing
+- Use `--log-dir ./logs` to save all output to log files for later inspection
+- Log files include the command, exit code, duration, stdout, and stderr
 
 ### Downloading files from Globus first
 

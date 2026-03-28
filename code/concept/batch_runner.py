@@ -89,16 +89,56 @@ def parse_output(stdout: str, input_file: str) -> list[dict]:
     return results if results else [{"file": input_file, "run": 0, "error": "parse failed"}]
 
 
-def run_file(binary: str, np: int, input_file: str, num_runs: int, launcher: str = "mpirun") -> list[dict]:
+def run_file(binary: str, np: int, input_file: str, num_runs: int, launcher: str = "mpirun",
+             verbose: bool = False, log_dir: str = None) -> list[dict]:
     """Run concept binary once with --runs argument; return list of metrics dicts, one per run."""
+    import time
+
     if launcher == "srun":
         cmd = ["srun", "-n", str(np), binary, input_file, "--runs", str(num_runs)]
     else:
         cmd = ["mpirun", "-n", str(np), binary, input_file, "--runs", str(num_runs)]
+
+    if verbose:
+        print(f"\n  Command: {' '.join(cmd)}", file=sys.stderr)
+
+    start_time = time.time()
     proc = subprocess.run(cmd, capture_output=True, text=True)
+    elapsed = time.time() - start_time
+
+    # Save to log file if requested
+    log_path = None
+    if log_dir:
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
+        file_basename = Path(input_file).stem
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = Path(log_dir) / f"{file_basename}_{timestamp}.log"
+        with open(log_path, "w") as f:
+            f.write(f"Command: {' '.join(cmd)}\n")
+            f.write(f"Exit code: {proc.returncode}\n")
+            f.write(f"Duration: {elapsed:.2f}s\n")
+            f.write(f"\n{'='*60}\nSTDOUT:\n{'='*60}\n")
+            f.write(proc.stdout)
+            f.write(f"\n{'='*60}\nSTDERR:\n{'='*60}\n")
+            f.write(proc.stderr)
+
     if proc.returncode != 0:
-        print(f"  ERROR (exit {proc.returncode}):\n{proc.stderr.strip()}", file=sys.stderr)
-        return [{"error": proc.stderr.strip(), "file": input_file, "run": 0}]
+        # Always print detailed error info
+        print(f"\n  ERROR: Command failed with exit code {proc.returncode}", file=sys.stderr)
+        print(f"  File: {input_file}", file=sys.stderr)
+        print(f"  Command: {' '.join(cmd)}", file=sys.stderr)
+        if log_path:
+            print(f"  Full output saved to: {log_path}", file=sys.stderr)
+        print(f"\n  STDERR:\n{proc.stderr}", file=sys.stderr)
+        if proc.stdout.strip():
+            print(f"\n  STDOUT:\n{proc.stdout}", file=sys.stderr)
+        return [{"error": proc.stderr.strip(), "file": input_file, "run": 0, "exit_code": proc.returncode}]
+
+    if verbose:
+        print(f"  Duration: {elapsed:.2f}s", file=sys.stderr)
+        print(f"  STDOUT:\n{proc.stdout}", file=sys.stderr)
+        if proc.stderr.strip():
+            print(f"  STDERR:\n{proc.stderr}", file=sys.stderr)
 
     results = parse_output(proc.stdout, input_file)
     return results
@@ -124,6 +164,10 @@ def main():
                         help="Number of repeated runs per file (default: 1)")
     parser.add_argument("--output", default=f"results-{datetime.now().isoformat(timespec='seconds')}.json",
                         help="Output JSON file (default: %(default)s)")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print full command output and timing info")
+    parser.add_argument("--log-dir",
+                        help="Save all run output to log files in this directory")
 
     args = parser.parse_args()
 
@@ -139,12 +183,17 @@ def main():
             files = [line.strip() for line in f if line.strip()]
 
     print(f"Running {len(files)} file(s) × {args.runs} run(s) with {args.np} MPI ranks")
+    if args.verbose:
+        print(f"Verbose mode enabled", file=sys.stderr)
+    if args.log_dir:
+        print(f"Logging to: {args.log_dir}", file=sys.stderr)
 
     results = []
     for path in files:
         label = f"{path}" + (f" ({args.runs} run(s))" if args.runs > 1 else "")
         print(f"  {label} ... ", end="", flush=True)
-        run_results = run_file(args.binary, args.np, path, args.runs, args.launcher)
+        run_results = run_file(args.binary, args.np, path, args.runs, args.launcher,
+                               verbose=args.verbose, log_dir=args.log_dir)
         results.extend(run_results)
 
         # Print summary for first run
@@ -154,7 +203,7 @@ def main():
             send_u = run_results[0].get("send_uncompressed_s", "?")
             print(f"ratio={ratio}  send_C={send_c}s  send_U={send_u}s (first run)")
         else:
-            print("FAILED")
+            print("FAILED (see stderr for details; use --verbose for more info)")
 
     with open(args.output, "w") as f:
         json.dump(results, f, indent=2)
