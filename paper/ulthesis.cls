@@ -1,0 +1,1 @@
+../tex-cfg/ulthesis.cls
