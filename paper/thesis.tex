@@ -1,0 +1,194 @@
+% The ulthesis class and most of the following came from
+% https://prancer.physics.louisville.edu/ulthesis/
+
+\documentclass{ulthesis}
+\author{Joseph Downs}
+% Your dissertation title should match pdf title above
+\title{OpenZL's Effectiveness in Compression of Scientific Data}
+
+\input{base-cfg.tex}
+\input{programming-cfg.tex}
+
+\bibliography{refs.bib}
+
+% Change figure and table caption label styles
+
+\usepackage[labelsep=period, labelfont=bf]{caption} % boldface with period
+
+\usepackage{chngcntr}   % use to serially number figures and tables 
+\usepackage{relsize}    % for BABAR text logo
+\usepackage{subcaption} % for side by side figures
+
+%=============================== Custom Commands ===============================
+\newcommand{\openzl}{OpenZL}
+\newcommand{\metainc}{Meta Platforms,~Inc.}
+
+
+\makeatletter
+\renewcommand\@memmain@floats{%
+% Enable serially numbered figures, tables and equations
+
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+\counterwithout{equation}{chapter}}
+
+% Suppress section numbering in TOC
+
+% \renewcommand{\cftsectionpresnum}{\begin{lrbox}{\@tempboxa}}
+% \renewcommand{\cftsectionaftersnum}{\end{lrbox}}
+% \makeatletter
+% \setlength{\cftsectionnumwidth}{0pt}
+
+% Restarts section numbered from 1 on each chapter
+
+% \renewcommand{\thesection}{\arabic{section}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\klong{\ensuremath{K_{\textrm L}^{0}} }
+
+\def\babar{\mbox{\slshape B\kern-0.3em{\smaller[2] A}\kern-0.1em B\kern-0.3em{\smaller[2] A\kern-0.2em R}} }
+\def\pt{\ensuremath{p_{\textrm T}} }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+% Aliases used in bib file for journal titles
+%\include{journals}
+
+%================================= Front matter ================================
+
+% Your current highest degree
+\authordegree{B.S. in Computer Science and Engineering, 2025}
+
+% This dissertation degree
+\dissertationdegree{Master of Engineering}
+
+% The dissertation discipline (may differ from the department name) for example "Physics"
+\dissertationdiscipline{Computer Science and Engineering}
+
+% Month and year of degree award
+\dissertationdate{December 2026}
+
+% Month day and year of dissertation approval
+\approvaldate{}
+
+% College or school
+\school{Speed School of Engineering}
+
+% Department in which the candidate is enrolled
+\department{Department of Computer Science and Engineering}
+
+
+% Advisors and committee members with appropriate honorifics
+\advisor{Dr. Adrian Lauf}
+\firstmember{Co-advisor or  first member}
+\secondmember{Second member}
+\thirdmember{Third member}
+% \fourthmember{Fourth member}
+
+
+% Use the same keywords for the pdf headers above
+\keywords{Keywords or phrases separated by commas}
+
+
+%This builds the title page and other front content
+\frontmatter
+
+\maketitle
+% Now we add edited content page by page.
+% Retain each section, edit as needed.
+% Keep this order of sections and end with the tables of contents.
+
+% \begin{dedication}
+
+% \end{dedication}
+% Insert external PDF page as needed by uncommenting the following
+% \includepdf[pages=-]{Biswas_Electronic_Dissertation_Signature_Page_signed.pdf}
+
+% An section with acknowledgments is conventional
+
+\begin{acknowledgments}
+
+\end{acknowledgments}
+
+
+% Dissertation abstract should summarize the content
+
+% The best practice is to not have citations in the abstract
+% Avoid language which is specialized and acronyms that are not defined
+
+\begin{dissertationabstract}
+  \input{abstract.tex}
+\end{dissertationabstract}
+
+
+
+% These commands will generate the required tables of contents. 
+% The \clearpage commands insure that the next one begins on a new page.
+
+\tableofcontents* \clearpage
+\listoftables \clearpage
+\listoffigures \clearpage
+
+
+%================================= Main matter =================================
+
+% Note we need this to insure proper formatting for the body of the dissertation.
+\mainmatter
+
+% Use separate files for chapters and include the chapter titles here. Having
+% the titles here is necessary to get them properly indexed and formatted. The
+% \input{file} will pull in the content of that file. You do not have to give an
+% extension ".tex" but it anticipates the file has that.
+
+\input{introduction.tex}
+
+\chapter{Observations}
+%\input{observations.tex}
+
+\chapter{Analysis}
+%\input{analysis.tex}
+
+\chapter{Conclusions}
+%\input{conclusions.tex}
+
+%================================= Back matter =================================
+
+% The layout changes for the last part and you need this command
+\backmatter
+
+% You can change the style of the bibliography for whatever would be accepted by
+% your discipline and the University format checkers.
+
+% There are several bibliography managers that may be used with LaTeX. Here we
+% have defaulted to bibtex, but if this does not work for you try others.
+
+% Style "apalike" is similar to the Harvard style. If you prefer numbered
+% references, try "plain".
+
+% The ulthesis package includes a copy of the Optical Society of America's
+% bibliography style which retains titles and provides a clean looking
+% bibliography in order of citation in the body. It is used here by default.
+
+% If you want a true Harvard style you can use "biblatex" or "natbib" insdotead of
+% bibtex, which requires some other modifications. There is help for this on
+% Sharelatex and on Overleaf, as well as through Google searches.
+
+%\bibliographystyle{apalike}
+%\bibliographystyle{plain}
+%\bibliographystyle{osajnl}
+%\bibliographystyle{ieee}
+%\bibliography{dissertation}
+
+\printbibliography
+
+% Appendices and the Vita are treated as chapters in the back matter
+
+\chapter{Appendix A: }
+
+\chapter{Appendix B: }
+
+\chapter{Curriculum Vitae}
+%\input{vita.tex}
+
+
+\end{document}
