@@ -1,0 +1,65 @@
+\chapter{Introduction}
+\section{Purpose}
+
+
+\section{OpenZL}
+The meat and potatoes of this thesis rests on OpenZL and its innovations. What
+is OpenZL? OpenZL is a graph-based compressor released by \metainc{} in a
+whitepaper, ``OpenZL: A Graph-Based Model for
+Compression''\cite{collet_openzl_2025}, in 2025. It allows for greater
+performance over generic compressors without the complexity and challenges of
+application-specific compressors. The compressed data format is ``a
+self-describing wire format, \ldots which can be decompressed by a universal
+decoder.''\cite{collet_openzl_2025} Because of this, it allows compressors
+tailored to datasets with universal decoding. The whitepaper lists the following
+benefits:
+\begin{itemize}
+\item Minimal upfront investment
+\item Flexibility of input data formats
+\item Minimized security surface
+\item Easy iteration
+\item Fast deployment
+\item Support for high-cardinality data
+\end{itemize}
+
+\section{Existing Work}
+Previous work has shown compression to be beneficial in HPC workloads.
+\cite{ratanaworabhan_fast_2006} showed their compression methodology allowed for
+a compression throughput rate that ``exceeds the throughput of Fast Ethernet
+networks and of many hard disks.'' Additionally, the authors postulate ``the
+time saved due to sending or storing the shorter compressed data stream is
+likely to outweigh the runtime overhead introduced by performing the
+compression'' \cite{ratanaworabhan_fast_2006}. However, that paper was 20 years
+ago. In the interim, data sizes and network, storage and compute speeds have all
+increased.
+
+\subsection{Lossy Compression}
+
+Lossy compressors such as SZ show compression ratios between
+3.3:1--436:1\cite{di_fast_2016}. Even on the low end, this is better than
+lossless compression schemes which generally only see ratios of less than
+2.\cite{lu_understanding_2018}
+
+So if lossy compression is so wonderful, why bother investigating OpenZL or
+other lossless compressor? Lossy compression, by definition, loses data. In HPC
+with high-precision floating-point data, precision loss may be unacceptable.
+Precision loss may be acceptable as shown by \cite{di_fast_2016} and
+\cite{lu_understanding_2018}. However, this takes additional work and
+verification to ensure the data loss has not affected the simulation output. In
+this paper, I will focus on lossless compression because it can be implemented
+with no loss to data accuracy.
+
+\subsection{Hardware Acceleration}
+The ``correct'' answer is to offload compression of data to specialized
+hardware.\cite{li_performance_2026} Previous work (\cite{li_accelerating_2024},
+\cite{li_compression_2024}) shows NVIDIA BlueField DPUs and its C-engine
+providing a significant speedup ($10\times$--$100\times$) for compression time
+compared to its SoC. However, to make use of these DPUs would require a not
+insignificant monetary cost; requiring purchasing DPUs for each node in a
+cluster if one wanted to compress/decompress in transit. There is the potential
+to buy fewer than $n$ DPUs for $n$ nodes, and compress on a DPU and decompress
+on the CPU; that is outside the scope of this paper. To that end, this paper
+will only focus on compression performed on the CPU.
+
+
+\input{methods.tex}
