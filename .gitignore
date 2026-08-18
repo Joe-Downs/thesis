@@ -13,4 +13,15 @@ results.json
 *.aux
 *.bbl
 *.bbl-SAVE-ERROR
+*.bcf
+*.bcf-SAVE-ERROR
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
 *.pdf
+*.run.xml
+*.toc
