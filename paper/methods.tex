@@ -1,0 +1,71 @@
+\section{Methods}
+\label{sec:methods}
+
+To answer the question of ``does \openzl{} improve performance for data transfers
+on HPC systems?'' we need to test various file transfer scenarios which can be
+found in HPC workloads. Such scenarios include:
+\begin{itemize}
+\item large-size checkpointing
+\item data ingest
+\end{itemize}
+
+Adding permutations to these scenarios, we can also vary when we compress the
+data. For instance, we can compress the data:
+\begin{itemize}
+\item ``in-transit'' immediately before a transfer,
+\item pre-compress before writing to storage, and
+\item no compression.
+\end{itemize}
+
+
+However, it may not be practical, easy, or even possible to compress/decompress
+in all these scenarios. For instance, data stored on network storage would need
+to be compressed \emph{before} storage rather than ``in-transit'' since we don't
+have control over the storage nodes. In which case, the only compression we can
+test is pre-compressing data and storing that data.
+
+
+\subsection{In-Transit}
+\label{sec:in-transit-method}
+
+\subsection{Checkpointing}
+\label{sec:checkpoint-method}
+When testing checkpointing compression, we gather our data, compress it, and
+save it to a file. However, this also adds additional complexity/overhead
+if/when we resume a job. Now we also have to \emph{decompress} the data when
+ingesting it into the resuming job. Additionally, we need some sort of logic to
+decide whether said data even needs to be decompressed. For instance, as
+discussed in Section \ref{sec:compress-or-not}, not every file will be
+compressed.
+
+\subsection{No Compression}
+\label{sec:no-compress-method}
+Self-explanatory. We transmit the data without any compression whatsoever. If
+our other compression scenarios are faster than this: great we have an
+improvement.
+
+
+
+\subsection{To Compress or not to Compress?}
+\label{sec:compress-or-not}
+Given the wide range of data formats, shapes, and sizes, even \emph{if}
+\openzl{} is effective at compressing in a particular scenario, it may not be the
+right choice in \emph{every} scenario. As such, we want to develop some method
+of deciding whether or not compression will be beneficial \emph{without actually
+doing the operation}.
+
+
+\subsection{How Do We Quantify ``Effectiveness?''}
+\label{sec:quantifying-effectiveness}
+We've been asking the question: ``is \openzl{} effective for compression in HPC
+workloads?'' But what does ``effective'' mean? Depending on what we're after,
+whether or not it's ``effective'' could mean multiple things. Is it cheap to
+implement? Does it save storage space? Does it save time? Does it work at all?
+For our purposes, we mainly care about how much time it saves, if at all. As
+such, we pretty much care about two metrics: how quickly can \openzl{} compress
+our data? and what compression ratios can it achieve?
+
+The faster the execution time, the better. Without compression, there is no
+execution time, so \openzl{} is already at a disadvantage here. However, it may
+save time in transmitting the data over the network by having fewer bytes to
+transfer. This is where that second metric of compression ratios comes in.
