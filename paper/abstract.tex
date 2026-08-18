@@ -1,0 +1,11 @@
+As dataset sizes in AI/HPC workloads increase, data compression could become
+useful to speed up overall execution time by reducing the time taken to transfer
+between nodes on the network. However, this is not useful if the time
+\emph{cost} of compression/decompression outweighs the time \emph{savings} in
+data transmission over the network. This paper explores methods of compressing
+data --- using OpenZL, a recent lossless compression framework --- in various
+scenarios, i.e., compression before execution, compression during execution, and
+no compression. I compare and analyze the time taken with various compression
+algorithms and datasets. With the scenarios and datasets tested, \{all
+scenarios; some scenarios; no scenarios\} exhibited speedup as a result of
+compression with OpenZL.
