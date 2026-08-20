@@ -1,6 +1,9 @@
 build/
 data/
 results.json
+__pycache__/
+.venv/
+code/baseline/traces/*.jsonl
 
 
 # ============================ LaTeX-related ignores ===========================
