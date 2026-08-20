@@ -25,6 +25,23 @@ Any other code that is just for proof-of-concepts or otherwise not really
 related to the final deliverable.
 
 
+## Environment Setup
+
+Python dependencies across this repo (Globus downloading, telemetry/tracing) are
+declared in the root [`environment.yml`](environment.yml). On the Zurada cluster,
+load Miniforge and create the environment with:
+
+```bash
+module load miniforge3/25.3.1-gcc-11.4.1
+conda env create -f environment.yml
+conda activate thesis
+```
+
+See [`code/concept/README.md`](code/concept/README.md) for the full Slurm workflow,
+including why the MPI build stays on the cluster's system-provided `module load
+<mpi-module>` rather than a conda-provided MPI.
+
+
 ## Cloning
 
 Since we make use of a submodule for [shared TeX

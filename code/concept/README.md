@@ -67,11 +67,29 @@ data_downloader.py        →     sbatch job.sh
 (downloads to shared FS)        (reads from shared FS, runs concept)
 ```
 
-### 1. Create a Python venv on the shared filesystem (login node, once only)
+### 1. Create a Python environment on the shared filesystem (login node, once only)
 
-Compute nodes typically don't share the login node's local Python environment.
-Create a virtual environment somewhere on the shared filesystem (e.g. `$HOME` or
-`$SCRATCH`) so all nodes can see it:
+Compute nodes typically don't share the login node's local Python environment, so
+the environment needs to live somewhere on the shared filesystem.
+
+**On Zurada (recommended): Conda/Miniforge**, using the [`environment.yml`](../../environment.yml)
+at the repo root:
+
+```bash
+module load miniforge3/25.3.1-gcc-11.4.1
+conda env create -f ../../environment.yml   # run from code/concept/
+conda activate thesis
+```
+
+This conda environment is Python-only — it does not provide MPI. `concept` is
+still built and run against the cluster's system MPI via `module load
+<mpi-module>` (step 3 below), since conda-forge's MPI builds aren't compiled
+against the cluster's InfiniBand fabric drivers and commonly perform poorly or
+fail to find the fabric at all. Keep the two toolchains separate: conda for
+Python tooling (`data_downloader.py`, `batch_runner.py`), system modules for
+building/running `concept`.
+
+**Elsewhere / off-cluster:** a plain venv works too:
 
 ```bash
 python3 -m venv $HOME/venvs/concept
@@ -82,7 +100,7 @@ pip install -r requirements.txt
 ### 2. Download data on the login node
 
 ```bash
-source $HOME/venvs/concept/bin/activate
+conda activate thesis   # or: source $HOME/venvs/concept/bin/activate
 python3 data_downloader.py \
   --client-id       $GLOBUS_CLIENT_ID \
   --source-endpoint <source-uuid> \

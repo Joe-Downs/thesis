@@ -1,0 +1,11 @@
+name: thesis
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - opentelemetry-sdk
+      - opentelemetry-api
+      - elasticsearch
+      - globus-sdk
