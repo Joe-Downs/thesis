@@ -1,7 +1,7 @@
 OPENZL_DIR := ../modules/openzl
 
 CFLAGS += -Wall -I$(OPENZL_DIR)/include
-LDLIBS += -lzstd -llz4 -llzma $(OPENZL_DIR)/libopenzl.a -lstdc++ -lpthread
+LDLIBS += -lzstd -llz4 -llzma $(OPENZL_DIR)/libopenzl.a -lstdc++ -lpthread -lm
 
 compress: compress.c
 	$(CC) $(CFLAGS) $< $(LDLIBS) -o $@
