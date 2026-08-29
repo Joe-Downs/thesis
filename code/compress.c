@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <sys/stat.h>
 #include <zstd.h>
 #include <lz4.h>
 #include <lzma.h>
@@ -10,96 +8,9 @@
 #include <openzl/zl_errors.h>
 #include <openzl/codecs/zl_zstd.h>
 
+#include "otel/tracing.h"
+
 #define DSTSIZE 1024
-
-/* ---- tracing ---- */
-
-typedef struct {
-    FILE *fp;
-    char  trace_id[33]; /* 32 hex chars + NUL */
-} TraceWriter;
-
-static void gen_hex(char *out, size_t n_bytes) {
-    FILE *rng = fopen("/dev/urandom", "rb");
-    for (size_t i = 0; i < n_bytes; i++) {
-        unsigned char b = 0;
-        fread(&b, 1, 1, rng);
-        sprintf(out + i * 2, "%02x", b);
-    }
-    out[n_bytes * 2] = '\0';
-    fclose(rng);
-}
-
-static void ts_to_iso8601(struct timespec ts, char *buf, size_t cap) {
-    struct tm t;
-    gmtime_r(&ts.tv_sec, &t);
-    char base[24];
-    strftime(base, sizeof(base), "%Y-%m-%dT%H:%M:%S", &t);
-    snprintf(buf, cap, "%s.%09ldZ", base, ts.tv_nsec);
-}
-
-static TraceWriter trace_open(const char *experiment) {
-    mkdir("traces", 0755);
-
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    struct tm t;
-    gmtime_r(&now.tv_sec, &t);
-    char stamp[20];
-    strftime(stamp, sizeof(stamp), "%Y%m%dT%H%M%SZ", &t);
-
-    char path[256];
-    snprintf(path, sizeof(path), "traces/%s_%s.jsonl", experiment, stamp);
-
-    TraceWriter tw;
-    gen_hex(tw.trace_id, 16);
-    tw.fp = fopen(path, "w");
-    fprintf(stderr, "tracing -> %s\n", path);
-    return tw;
-}
-
-static void trace_span(TraceWriter *tw, const char *algorithm,
-                       size_t input_size, size_t output_size,
-                       struct timespec t0, struct timespec t1) {
-    char span_id[17];
-    gen_hex(span_id, 8);
-
-    char start_s[40], end_s[40];
-    ts_to_iso8601(t0, start_s, sizeof(start_s));
-    ts_to_iso8601(t1, end_s,   sizeof(end_s));
-
-    long duration_ns = (long)(t1.tv_sec - t0.tv_sec) * 1000000000L
-                     + (t1.tv_nsec - t0.tv_nsec);
-
-    fprintf(tw->fp,
-        "{\"name\":\"compress.run\","
-        "\"context\":{\"trace_id\":\"0x%s\",\"span_id\":\"0x%s\",\"trace_state\":\"[]\"},"
-        "\"kind\":\"SpanKind.INTERNAL\","
-        "\"parent_id\":null,"
-        "\"start_time\":\"%s\","
-        "\"end_time\":\"%s\","
-        "\"status\":{\"status_code\":\"OK\"},"
-        "\"attributes\":{"
-            "\"algorithm\":\"%s\","
-            "\"input_size_b\":%zu,"
-            "\"output_size_b\":%zu,"
-            "\"duration_ns\":%ld,"
-            "\"experiment\":\"compress-benchmark\""
-        "},"
-        "\"events\":[],"
-        "\"links\":[],"
-        "\"resource\":{\"attributes\":{\"service.name\":\"compress\"},\"schema_url\":\"\"}}"
-        "\n",
-        tw->trace_id, span_id,
-        start_s, end_s,
-        algorithm, input_size, output_size, duration_ns);
-}
-
-static void trace_close(TraceWriter *tw) {
-    if (tw->fp) fclose(tw->fp);
-}
-
-/* ---- compression ---- */
 
 enum Algorithm { ZSTD, OPENZL, LZ4, LZMA, SZ3 };
 
@@ -210,7 +121,7 @@ int main() {
                               uncompressedText, sizeof(uncompressedText));
     clock_gettime(CLOCK_REALTIME, &t1);
 
-    trace_span(&tw, algoNames[method],
+    trace_span(&tw, "compress.run", algoNames[method],
                sizeof(uncompressedText), outSize, t0, t1);
   }
 
