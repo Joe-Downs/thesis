@@ -1,6 +1,26 @@
 \chapter{Introduction}
 \section{Purpose}
+High-performance computing dataset sizes are
+increasing.\cite{reed_exascale_2015}. As \citeauthor{underwood_fraz_2020} state
+in \cite{underwood_fraz_2020}, ``Today’s scientific research applications
+produce volumes of data too large to be stored, transferred, and analyzed
+efficiently because of limited storage space and potential bottlenecks in I/O
+systems.'' \cite{foster_computing_2017} provides three examples of applications
+generating large volumes of data:
+\begin{itemize}
+\item Climate science simulations checkpointing generating \qty{260}{\tera\byte}
+  every 16~seconds.
+\item Singe XGC (``X-point included Gyrokinetics Code'') ITER fusion models
+  producing ``hundreds of petabytes''\cite{foster_computing_2017}.
+\item Femtosecond-level material science simulations producing ``exabytes on
+  exascale computers''\cite{foster_computing_2017}.
+\end{itemize}
 
+\cite{foster_computing_2017} notes this as a problem due to 2024-projected (at
+the time) compute rate outperforming disk write rate by 50 times. Because I/O
+throughput scales more slowly than computational speeds, ``We can no longer
+output every piece of information that we might ever possibly
+want.''\cite{foster_computing_2017}
 
 \section{OpenZL}
 The meat and potatoes of this thesis rests on OpenZL and its innovations. What
@@ -59,7 +79,7 @@ insignificant monetary cost; requiring purchasing DPUs for each node in a
 cluster if one wanted to compress/decompress in transit. There is the potential
 to buy fewer than $n$ DPUs for $n$ nodes, and compress on a DPU and decompress
 on the CPU; that is outside the scope of this paper. To that end, this paper
-will only focus on compression performed on the CPU.
-
+will only focus on compression performed on the CPU. I will investigate purely
+software solutions which come at no additional (monetary) cost to implement.
 
 \input{methods.tex}
