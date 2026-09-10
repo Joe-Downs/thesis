@@ -1,4 +1,4 @@
-\section{Methods}
+\chapter{Methods}
 \label{sec:methods}
 
 To answer the question of ``does \openzl{} improve performance for data transfers
@@ -25,10 +25,10 @@ have control over the storage nodes. In which case, the only compression we can
 test is pre-compressing data and storing that data.
 
 
-\subsection{In-Transit}
+\section{In-Transit}
 \label{sec:in-transit-method}
 
-\subsection{Checkpointing}
+\section{Checkpointing}
 \label{sec:checkpoint-method}
 When testing checkpointing compression, we gather our data, compress it, and
 save it to a file. However, this also adds additional complexity/overhead
@@ -38,7 +38,7 @@ decide whether said data even needs to be decompressed. For instance, as
 discussed in Section \ref{sec:compress-or-not}, not every file will be
 compressed.
 
-\subsection{No Compression}
+\section{No Compression}
 \label{sec:no-compress-method}
 Self-explanatory. We transmit the data without any compression whatsoever. If
 our other compression scenarios are faster than this: great we have an
@@ -46,7 +46,7 @@ improvement.
 
 
 
-\subsection{To Compress or not to Compress?}
+\section{To Compress or not to Compress?}
 \label{sec:compress-or-not}
 Given the wide range of data formats, shapes, and sizes, even \emph{if}
 \openzl{} is effective at compressing in a particular scenario, it may not be the
@@ -55,7 +55,7 @@ of deciding whether or not compression will be beneficial \emph{without actually
 doing the operation}.
 
 
-\subsection{How Do We Quantify ``Effectiveness?''}
+\section{How Do We Quantify ``Effectiveness?''}
 \label{sec:quantifying-effectiveness}
 We've been asking the question: ``is \openzl{} effective for compression in HPC
 workloads?'' But what does ``effective'' mean? Depending on what we're after,
