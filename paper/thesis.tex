@@ -6,7 +6,28 @@
 % Your dissertation title should match pdf title above
 \title{OpenZL's Effectiveness in Compression of Scientific Data}
 
-\input{base-cfg.tex}
+\usepackage[american]{babel}
+\usepackage{biblatex}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage[useregional]{datetime2}
+\usepackage{enumitem}
+\usepackage[pdfusetitle]{hyperref}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage[super]{nth}
+\usepackage{pgf}
+\usepackage{setspace}
+\usepackage{siunitx}
+\usepackage{subcaption}
+\usepackage{textcomp}
+\usepackage{tikz}
+\usepackage{xcolor}
+
+% The call to \usepackage[margin=1in]{geometry} breaks the margins set in
+% ulthesis.cls. For now, I think it's best to just remove base-cfg and manually
+% add packages I need here in this document.
+%\input{base-cfg.tex}
 \input{programming-cfg.tex}
 
 \bibliography{refs.bib}
