@@ -1,2 +1,43 @@
 \chapter{Background}
 \label{sec:background}
+% TODO: briefly explain / mention the types of compressors here. Maybe explain
+% in Compression Methods below.
+
+\section{History of Compression}
+\label{sec:compression-history}
+First, we will go over a brief summary and history of compression methods. More
+detail about said methods will be given in~\cref{sec:compression-methods}. In
+the beginning, the words were uncompressed and it was good.\cite{salomon_data_2004}
+\subsection{Entropy Encoders}
+\label{subsec:entropy-compressor-history}
+In 1952, \citeauthor{huffman_method_1952} published
+\citetitle{huffman_method_1952} which introduced a coding method which became
+known as Huffman coding (HC). Huffman coding improved upon Shannon-Fano coding.
+More specifics of the algorithm are discussed in~\cref{sec:huffman-coding}.
+
+As early as 1999, arithmetic coding (AC) was used in the best compression
+methods for text and several state-of-the-art image compression
+algorithms.\cite[p.110]{mackay_information_2003} In 2014,
+\citeauthor{duda_asymmetric_2013}
+% TODO: short title or full title?
+published \citetitle{duda_asymmetric_2013},\footnote{Should this be the
+  full-title? Right now, it's the ``short title'' stored in Zotero.} introducing
+a new approach to entropy coding: asymmetric numeral systems (ANS). This method
+``provides about 50\% faster decoding than HC for 256 size alphabet, with
+compression rate similar to provided by AC.''\cite{duda_asymmetric_2013}.
+
+\subsection{Dictionary-Based Compressors}
+\label{subsec:dict-compressor-history}
+In 1977 and 1978, LZ77 and LZ78, respectively, were released by
+\citeauthor{ziv_universal_1977} in their papers
+\citetitle{ziv_universal_1977}\cite{ziv_universal_1977} and
+\citetitle{ziv_compression_1978}\cite{ziv_compression_1978}. These algorithms
+(and their descendents, known as Lempel-Ziv (LZ) compressors) are
+dictionary-based compressors rather than entropy (en)coders.
+
+\section{Compression Methods}
+\label{sec:compression-methods}
+
+\subsection{Huffman Coding}
+\label{sec:huffman-coding}
+
