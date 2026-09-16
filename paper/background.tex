@@ -3,11 +3,26 @@
 % TODO: briefly explain / mention the types of compressors here. Maybe explain
 % in Compression Methods below.
 
+Two main categories of lossless compressors are statistical and dictionary-based
+methods.\cite[p.7]{salomon_data_2004} Statistical methods are also known as
+entropy encoding. These methods use variable-length codes to encode the data.
+Shorter codes are used for phrases with higher probability (occur more often in
+the data). Phrases can be individual symbols (e.g., letters, numbers, or
+punctuation) or strings of symbols (e.g., words).\cite[p.43]{salomon_data_2004}
+
+On the other hand, dictionary-based methods map strings of symbols to a token,
+which could be a numeric index. The dictionary can be static or dynamic
+(adaptive). A static dictionary permanently has the same set of strings no
+matter the input data; strings \emph{may} be added but deletion is not possible.
+Dynamic dictionaries add and delete strings as the input data is
+read.\cite[p.165]{salomon_data_2004}
+
 \section{History of Compression}
 \label{sec:compression-history}
 First, we will go over a brief summary and history of compression methods. More
 detail about said methods will be given in~\cref{sec:compression-methods}. In
-the beginning, the words were uncompressed and it was good.\cite{salomon_data_2004}
+the beginning, the words were uncompressed and it was good.
+
 \subsection{Entropy Encoders}
 \label{subsec:entropy-compressor-history}
 In 1952, \citeauthor{huffman_method_1952} published
