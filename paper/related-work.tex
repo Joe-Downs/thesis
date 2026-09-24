@@ -45,7 +45,7 @@ increased.
 Lossy compressors such as SZ show compression ratios between
 3.3:1--436:1\cite{di_fast_2016}. Even on the low end, this is better than
 lossless compression schemes which generally only see ratios of less than
-2.\cite{lu_understanding_2018}
+2\cite{lu_understanding_2018}.
 
 So if lossy compression is so wonderful, why bother investigating OpenZL or
 other lossless compressor? Lossy compression, by definition, loses data. In HPC
@@ -59,7 +59,7 @@ with no loss to data accuracy.
 \subsection{Hardware Acceleration}
 The ``correct'' answer is to offload compression of data to specialized
 hardware.\cite{li_performance_2026} Previous work
-(\cite{li_accelerating_2024},~\cite{li_compression_2024}) shows NVIDIA BlueField
+(\cite{li_accelerating_2024,li_compression_2024}) shows NVIDIA BlueField
 DPUs and its C-engine providing a significant speedup ($10\times$--$100\times$)
 for compression time compared to its SoC. However, to make use of these DPUs
 would require a not insignificant monetary cost; requiring purchasing DPUs for
