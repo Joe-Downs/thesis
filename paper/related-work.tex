@@ -1,6 +1,35 @@
 \chapter{Related Work}
 \label{sec:related-work}
 
+% 1-pager
+
+Before we test out \openzl{}, we need to take a look at the current state of
+compression of scientific data, and particularly its use (or lack thereof) in
+high-performance computing (HPC). There has been a reasonable amount of research
+into both lossless and lossy compression of scientific data. The structure of
+this section will be as follows:
+\begin{itemize}
+\item Scientific compressors
+\item HPC compression
+\item Artificial intelligence (AI) compression
+\item Lossy compressors
+\item Hardware-accelerated compression
+\end{itemize}
+
+First, we will cover the current efforts towards compression of high-precision
+floating point scientific data. Second, we will cover efforts of integrating
+these compressors into HPC workloads. Third, briefly, we will cover compression
+in AI-related environments. This is not \emph{directly} related to HPC, but
+
+The last two sections (lossy compression and hardware acceleration) are not
+directly relevant to my work. \openzl{} is lossless, so I will not
+\emph{directly} compare it to lossy compressors. Lossy compression will,
+generally, have better compression ratios than a lossless compressor at the cost
+of some precision\cite{lu_understanding_2018}.
+
+
+\section{Scientific Compression}
+\label{sec:sci-compression}
 Previous work has shown compression to be beneficial in HPC workloads.
 \cite{ratanaworabhan_fast_2006} showed their compression methodology allowed for
 a compression throughput rate that ``exceeds the throughput of Fast Ethernet
@@ -11,6 +40,7 @@ compression'' \cite{ratanaworabhan_fast_2006}. However, that paper was 20 years
 ago. In the interim, data sizes and network, storage and compute speeds have all
 increased.
 
+
 \subsection{Lossy Compression}
 Lossy compressors such as SZ show compression ratios between
 3.3:1--436:1\cite{di_fast_2016}. Even on the low end, this is better than
@@ -20,21 +50,22 @@ lossless compression schemes which generally only see ratios of less than
 So if lossy compression is so wonderful, why bother investigating OpenZL or
 other lossless compressor? Lossy compression, by definition, loses data. In HPC
 with high-precision floating-point data, precision loss may be unacceptable.
-Precision loss may be acceptable as shown by \cite{di_fast_2016} and
-\cite{lu_understanding_2018}. However, this takes additional work and
+Precision loss may be acceptable as shown by \cite{di_fast_2016}
+and~\cite{lu_understanding_2018}. However, this takes additional work and
 verification to ensure the data loss has not affected the simulation output. In
 this paper, I will focus on lossless compression because it can be implemented
 with no loss to data accuracy.
 
 \subsection{Hardware Acceleration}
 The ``correct'' answer is to offload compression of data to specialized
-hardware.\cite{li_performance_2026} Previous work (\cite{li_accelerating_2024},
-\cite{li_compression_2024}) shows NVIDIA BlueField DPUs and its C-engine
-providing a significant speedup ($10\times$--$100\times$) for compression time
-compared to its SoC. However, to make use of these DPUs would require a not
-insignificant monetary cost; requiring purchasing DPUs for each node in a
-cluster if one wanted to compress/decompress in transit. There is the potential
-to buy fewer than $n$ DPUs for $n$ nodes, and compress on a DPU and decompress
-on the CPU; that is outside the scope of this paper. To that end, this paper
-will only focus on compression performed on the CPU. I will investigate purely
-software solutions which come at no additional (monetary) cost to implement.
+hardware.\cite{li_performance_2026} Previous work
+(\cite{li_accelerating_2024},~\cite{li_compression_2024}) shows NVIDIA BlueField
+DPUs and its C-engine providing a significant speedup ($10\times$--$100\times$)
+for compression time compared to its SoC. However, to make use of these DPUs
+would require a not insignificant monetary cost; requiring purchasing DPUs for
+each node in a cluster if one wanted to compress/decompress in transit. There is
+the potential to buy fewer than $n$ DPUs for $n$ nodes, and compress on a DPU
+and decompress on the CPU; that is outside the scope of this paper. To that end,
+this paper will only focus on compression performed on the CPU\@. I will
+investigate purely software solutions which come at no additional (monetary)
+cost to implement.
