@@ -3,6 +3,22 @@
 % TODO: briefly explain / mention the types of compressors here. Maybe explain
 % in Compression Methods below.
 
+Before getting into related work, we will cover some background information.
+This section is intended to bring the reader up to speed with the various
+technologies and techniques covered within this thesis. In this section, we will
+cover the following:
+\begin{enumerate}
+\item History of compression
+\item Compression method details
+\item High-performance computing (HPC)
+\item High-speed networking (HSN)
+\end{enumerate}
+For both the history of compression, and compression method details, we will
+cover entropy encoders and dictionary-based encoders. We will cover the basic
+concepts of each method and details of some notable compression algorithms. With
+the field of data compression spanning several decades, an exhaustive inspection
+of each and every compression algorithm is not possible for time considerations.
+
 Two main categories of lossless compressors are statistical and dictionary-based
 methods\cite[p.7]{salomon_data_2004}. Statistical methods are also known as
 entropy encoding. These methods use variable-length codes to encode the data.
@@ -16,6 +32,10 @@ which could be a numeric index. The dictionary can be static or dynamic
 matter the input data; strings \emph{may} be added but deletion is not possible.
 Dynamic dictionaries add and delete strings as the input data is
 read\cite[p.165]{salomon_data_2004}.
+
+Lastly, as an introduction into HPC environments: unique architecture aspects,
+how they differ from typical ``low-performance'' computing, and the different
+network technologies they use for their high-speed networks.
 
 \section{History of Compression}
 \label{sec:compression-history}
@@ -56,3 +76,18 @@ dictionary-based compressors rather than entropy (en)coders.
 \subsection{Huffman Coding}
 \label{sec:huffman-coding}
 
+%===================================== HPC =====================================
+\section{High-Performance Computing}
+\label{sec:hpc-background}
+% - How is this different from regular computing?
+
+
+%===================================== HSN =====================================
+\section{High-Speed Networking}
+\label{sec:hsn-background}
+% * Common Interconnects
+%   - InfiniBand
+%   - Slingshot
+%   - Intel thing
+% * Increasing Speeds
+%   - Timeline of IB speeds
