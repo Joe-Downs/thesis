@@ -20,23 +20,28 @@ the field of data compression spanning several decades, an exhaustive inspection
 of each and every compression algorithm is not possible for time considerations.
 
 Two main categories of lossless compressors are statistical and dictionary-based
-methods\cite[p.7]{salomon_data_2004}. Statistical methods are also known as
+methods\cite[7]{salomon_data_2004}. Statistical methods are also known as
 entropy encoding. These methods use variable-length codes to encode the data.
 Shorter codes are used for phrases with higher probability (occur more often in
 the data). Phrases can be individual symbols (e.g., letters, numbers, or
-punctuation) or strings of symbols (e.g., words)\cite[p.43]{salomon_data_2004}.
+punctuation) or strings of symbols (e.g., words)\cite[43]{salomon_data_2004}.
 
 On the other hand, dictionary-based methods map strings of symbols to a token,
 which could be a numeric index. The dictionary can be static or dynamic
 (adaptive). A static dictionary permanently has the same set of strings no
 matter the input data; strings \emph{may} be added but deletion is not possible.
 Dynamic dictionaries add and delete strings as the input data is
-read\cite[p.165]{salomon_data_2004}.
+read\cite[165]{salomon_data_2004}.
+
+The final ``category'' of compression methods we will cover is ``others.'' This
+covers methods which are neither statistical nor dictionary. Such as run-length
+encoding.
 
 Lastly, as an introduction into HPC environments: unique architecture aspects,
 how they differ from typical ``low-performance'' computing, and the different
 network technologies they use for their high-speed networks.
 
+%=================================== History ===================================
 \section{History of Compression}
 \label{sec:compression-history}
 First, we will go over a brief summary and history of compression methods. More
@@ -52,7 +57,7 @@ More specifics of the algorithm are discussed in~\cref{sec:huffman-coding}.
 
 As early as 1999, arithmetic coding (AC) was used in the best compression
 methods for text and several state-of-the-art image compression
-algorithms\cite[p.110]{mackay_information_2003}. In 2014,
+algorithms\cite[110]{mackay_information_2003}. In 2014,
 \citeauthor{duda_asymmetric_2013}
 % TODO: short title or full title?
 published \citetitle{duda_asymmetric_2013},\footnote{Should this be the
@@ -67,14 +72,65 @@ In 1977 and 1978, LZ77 and LZ78, respectively, were released by
 \citeauthor{ziv_universal_1977} in their papers
 \citetitle{ziv_universal_1977}\cite{ziv_universal_1977} and
 \citetitle{ziv_compression_1978}\cite{ziv_compression_1978}. These algorithms
-(and their descendents, known as Lempel-Ziv (LZ) compressors) are
+(and their descendants, known as Lempel-Ziv (LZ) compressors) are
 dictionary-based compressors rather than entropy (en)coders.
 
+\subsection{Other Compression Methods}
+\label{sec:other-compressor-history}
+Some compression methods are neither statistical nor dictionary-based. This
+includes run-length encoding (RLE), a straight-forward compression method used
+as early as \citeyear{robinson_results_1967} in compression of television
+signals\cite{robinson_results_1967}.
+
+
+%================================ Method Details ===============================
 \section{Compression Methods}
 \label{sec:compression-methods}
+Now that we have covered the history of popular compression methods, we will
+cover more specifics of the aforementioned methods. In this section, I will
+attempt to give as good a balance I can between specificity and readability. The
+descriptions of some algorithms given in their respective papers (e.g.,
+\cite{duda_asymmetric_2013,ziv_universal_1977,huffman_method_1952}) have a heavy
+focus on mathematics, which may be hard to readily understand.
+
+\subsection{Run-Length Encoding}
+\label{sec:run-length-encoding}
+Before diving into the more complicated compression algorithms, we will cover
+run-length encoding (RLE). It's not directly relevant to the other algorithms we
+cover, but RLE provides a simple introduction to compression methodology. Its
+straightforward nature is easy to understand with no prior understanding of
+compression methods. As the name implies, run-length encoding exploits
+\emph{runs} of identical data to compress.
+
+RLE has a straightforward approach: for $n$ consecutive appearances of data $d$,
+replace those $n$ appearances with $nd$\cite[20]{salomon_data_2004}. It is
+simple, but comes with some challenges. Say we have the following text:
+\begin{cverb}
+  username: admin; password: adm1npa55word502
+\end{cverb}
+Ignoring the fact this is a terribly insecure password, if we added the number
+of appearances ($n$) to every run of data, we'd increase the data size for any
+run of $n=1$, so we will only add the prefix if $n\geq2$. Doing so results in
+the following:
+\begin{cverb}
+  username: admin; pa2sword: adm1npa25word502
+\end{cverb}
+However, this brings up a problem for decoding. How do we differentiate what's
+part of the \emph{actual} data, and what's part of the \emph{metadata} we just
+added for compression purposes? Does \texttt{25} mean there should be 2
+\texttt{5}s or was the original text \texttt{25}? Does \texttt{502} decode to
+\texttt{000002}? Could it mean there were \emph{50} \texttt{2}s?
+
+This problem is where prefix codes help. Briefly, we can create prefixes which
+are unique and not found anywhere else in the data. Huffman coding, described in
+\cref{sec:huffman-coding}, is a method for finding such prefixes.
 
 \subsection{Huffman Coding}
 \label{sec:huffman-coding}
+
+\subsection{Arithmetic Coding}
+\label{sec:arithmetic-coding}
+
 
 %===================================== HPC =====================================
 \section{High-Performance Computing}

@@ -84,7 +84,17 @@
 \begin{document}
 
 % Aliases used in bib file for journal titles
-%\include{journals}
+% \include{journals}
+
+%============================= Custom Environments =============================
+% cverb environment for formatting binary numbers centered, similar to equations
+\newenvironment{cverb}{\begin{center}\ttfamily}{\end{center}}
+
+% binary environment for formatting binary numbers centered, similar to
+% equations
+\newenvironment{binary}{\begin{cverb}}{\end{cverb}}
+
+
 
 %================================= Front matter ================================
 
