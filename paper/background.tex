@@ -127,6 +127,121 @@ are unique and not found anywhere else in the data. Huffman coding, described in
 
 \subsection{Huffman Coding}
 \label{sec:huffman-coding}
+At a high level, compression with Huffman coding follows these steps:
+\begin{enumerate}
+\item Calculate the frequency of each symbol's appearance
+\item More frequent symbols get shorter codes
+\item Replace original symbols with codes
+\end{enumerate}
+Huffman coding is a method for finding minimum-redundancy prefix codes. A prefix
+code is a code which satisfies the \emph{prefix property}. In turn, the prefix
+property ensures that if a certain pattern of bits has been assigned to a
+symbol, it will not appear at the start of any other
+codes\cite[51]{salomon_data_2004}. As a \emph{statistical} method, Huffman
+coding makes use of the probabilities/frequency of each symbol appearing in a
+text.
+
+Say we want to compute codes for the five most frequent letters in the English
+language. We will use the frequencies as given by \cite[36]{lewand_cryptological_2000}
+and shown in \cref{tbl:english-letter-frequency}.
+\begin{table}[ht]
+  \centering
+  \caption{Relative frequencies of five most frequent letters in English}
+  \label{tbl:english-letter-frequency}
+  \begin{tabular}{c c}
+    \textbf{Letter} & \textbf{Frequency}\\
+    \midrule
+    $e$ & 0.127\\
+    $t$ & 0.091\\
+    $a$ & 0.082\\
+    $o$ & 0.075\\
+    $i$ & 0.061\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+First, each letter gets a node with weight corresponding to their frequency, as
+shown in \cref{fig:letter-frequency-nodes}.
+\begin{figure}[ht]
+  \centering
+  \begin{forest}
+    weighttree
+    [, phantom
+      [$e$, label=below:{0.127}, no edge]
+      [$t$, label=below:{0.091}, no edge]
+      [$a$, label=below:{0.082}, no edge]
+      [$o$, label=below:{0.075}, no edge]
+      [$i$, label=below:{0.061}, no edge]
+    ]
+  \end{forest}
+  \caption{Letter nodes with their frequencies}
+  \label{fig:letter-frequency-nodes}
+\end{figure}
+We combine the two smallest nodes ($i$ and $o$) under a new root node with a
+weight of $i + o = 0.136$. Next, we combine the next two smallest nodes ($t$ and
+$a$) under a new root node with weight $t + a = 0.173$. Note: we also consider
+the combined nodes, using their combined weights.
+\begin{figure}[ht]
+  \centering
+  \begin{forest}
+    weighttree
+    [, phantom
+      [$e$, label=below:{0.127}, no edge]
+      [$t$, label=below:{0.091}, no edge]
+      [$a$, label=below:{0.082}, no edge]
+      [0.136, no edge
+        [$o$, label=below:{0.075}]
+        [$i$, label=below:{0.061}]
+      ]
+    ]
+  \end{forest}
+  \caption{$i$ and $o$ nodes combined}
+  \label{fig:combined-i-o-nodes}
+\end{figure}
+We repeat these steps until every node is under a single root node, as shown in
+the final tree in \cref{fig:complete-huffman-tree}. This final tree is a
+``Huffman tree,'' and we use it to create our prefix codes. This is done by
+traversing the tree for each of our symbols. Starting from the root, we traverse
+the tree to find every leaf (symbol). Starting with an empty set ($\emptyset$),
+we add 0 every time you go left and 1 every time you go right. The generated
+codes are shown \cref{tbl:huffman-codes}. The more frequent symbols got shorter
+codes and these fulfill the prefix property.
+\begin{figure}[ht]
+  \centering
+  \begin{forest}
+    weighttree
+    [0.436
+      [0.263, edge label={node[midway, edgelabel]{0}}
+        [0.136, edge label={node[midway, edgelabel]{0}}
+          [$o$, label=below:{0.075}, edge label={node[midway, edgelabel]{0}}]
+          [$i$, label=below:{0.061}, edge label={node[midway, edgelabel]{1}}]
+        ]
+        [$e$, label=below:{0.127}, edge label={node[midway, edgelabel]{1}}]
+      ]
+      [0.173, edge label={node[midway, edgelabel]{1}}
+        [$t$, label=below:{0.091}, edge label={node[midway, edgelabel]{0}}]
+        [$a$, label=below:{0.082}, edge label={node[midway, edgelabel]{1}}]
+      ]
+    ]
+  \end{forest}
+  \caption{Final Huffman tree}
+  \label{fig:complete-huffman-tree}
+\end{figure}
+\begin{table}[ht]
+  \centering
+  \caption{Prefix codes generated from Huffman tree}
+  \label{tbl:huffman-codes}
+  \begin{tabular}{*{2}c}
+    \textbf{Symbol} & \textbf{Code}\\
+    \midrule
+    $e$ & 01\\
+    $t$ & 10\\
+    $a$ & 11\\
+    $o$ & 000\\
+    $i$ & 001\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 
 \subsection{Arithmetic Coding}
 \label{sec:arithmetic-coding}

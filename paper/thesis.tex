@@ -22,6 +22,7 @@
 \usepackage{subcaption}
 \usepackage{textcomp}
 \usepackage{tikz}
+\usepackage{forest}
 \usepackage{xcolor}
 \usepackage{cleveref}
 
@@ -45,6 +46,15 @@
 \sisetup{
   per-mode={symbol},
 }
+
+\usetikzlibrary{graphs}
+\usetikzlibrary{positioning}
+\tikzset{weightnode/.style={draw, circle, minimum size=3em}}
+\tikzstyle{every node}=[line width=1pt]
+\tikzstyle{every path}=[line width=1pt]
+\forestset{weighttree/.style={for tree={weightnode, s sep=4em, l sep=2em}}}
+\tikzset{edgelabel/.style={midway, font=\small, fill=white, inner sep=1pt,
+    minimum size=1em}}
 
 %=============================== Custom Commands ===============================
 \newcommand{\openzl}{OpenZL}
